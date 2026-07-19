@@ -122,6 +122,10 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS idx_conversations_user ON conversations(user_id);
   `);
 
+  await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'user'`);
+  await query(`ALTER TABLE projects ADD COLUMN IF NOT EXISTS dimensions JSONB DEFAULT '["3D","4D","5D"]'`);
+  await query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS dimension VARCHAR(10)`);
+
   console.log('Migrations completed successfully');
   process.exit(0);
 }
