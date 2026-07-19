@@ -14,7 +14,8 @@ function handleAIError(err: any, res: Response) {
 
 export async function analyzeProjectDimension(req: AuthRequest, res: Response) {
   try {
-    const { id, dimension } = req.params;
+    const { id } = req.params;
+    const dimension = req.params.dimension as string;
     const validDimensions = ['3D', '4D', '5D', '6D', '7D'];
     if (!validDimensions.includes(dimension)) {
       return res.status(400).json({ error: `Dimensión no válida. Use: ${validDimensions.join(', ')}` });
