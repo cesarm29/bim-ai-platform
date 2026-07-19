@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-const MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash-001'];
+const MODELS = ['gemini-3-flash-preview', 'gemini-2.0-flash'];
 
 const BIM_SYSTEM_PROMPT = `Eres un experto en BIM (Building Information Modeling) y construcción.
 Ayudas a arquitectos, ingenieros y constructores a optimizar sus proyectos.
