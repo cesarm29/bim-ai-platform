@@ -3,6 +3,15 @@ import { AuthRequest } from '../middleware/auth';
 import { query } from '../config/database';
 import { analyzeProjectData } from '../config/ai';
 
+function handleAIError(err: any, res: Response) {
+  const msg = err?.message || '';
+  if (msg.includes('429') || msg.includes('quota') || msg.includes('Quota')) {
+    return res.status(429).json({ error: 'Límite de la API gratuita alcanzado. Espera un momento y vuelve a intentar.' });
+  }
+  console.error('AI error:', err);
+  return res.status(500).json({ error: 'Error al procesar consulta con IA' });
+}
+
 export async function createProject(req: AuthRequest, res: Response) {
   try {
     const { name, description, location, startDate, endDate, dimensions } = req.body;
@@ -143,7 +152,6 @@ export async function aiAnalyzeProject(req: AuthRequest, res: Response) {
 
     res.json({ analysis });
   } catch (err) {
-    console.error('AI analyze error:', err);
-    res.status(500).json({ error: 'Error al analizar proyecto con IA' });
+    handleAIError(err, res);
   }
 }

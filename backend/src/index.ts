@@ -8,6 +8,7 @@ import projectRoutes from './routes/projects';
 import taskRoutes from './routes/tasks';
 import aiRoutes from './routes/ai';
 import adminRoutes from './routes/admin';
+import dimensionRoutes from './routes/dimensions';
 
 dotenv.config();
 
@@ -54,6 +55,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/projects', dimensionRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });

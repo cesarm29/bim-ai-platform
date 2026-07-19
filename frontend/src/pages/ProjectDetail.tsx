@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Sparkles, MessageSquare, Calendar, Clock, Trash2, CheckCircle2, Circle, Box, Timer, DollarSign, Leaf, Building2 } from 'lucide-react';
+import { ArrowLeft, Plus, Sparkles, MessageSquare, Calendar, Clock, Trash2, CheckCircle2, Circle, Box, Timer, DollarSign, Leaf, Building2, Loader2, AlertCircle } from 'lucide-react';
 import api from '../services/api';
 
 interface Task {
@@ -30,12 +30,12 @@ interface Project {
   tasks: Task[];
 }
 
-const DIMENSION_INFO: Record<string, { label: string; desc: string; icon: any; color: string; bg: string; cardBg: string }> = {
-  '3D': { label: '3D', desc: 'Modelo Geométrico', icon: Box, color: 'text-blue-700', bg: 'bg-blue-100', cardBg: 'bg-blue-50 border-blue-200' },
-  '4D': { label: '4D', desc: 'Tiempo', icon: Timer, color: 'text-green-700', bg: 'bg-green-100', cardBg: 'bg-green-50 border-green-200' },
-  '5D': { label: '5D', desc: 'Costos', icon: DollarSign, color: 'text-orange-700', bg: 'bg-orange-100', cardBg: 'bg-orange-50 border-orange-200' },
-  '6D': { label: '6D', desc: 'Sostenibilidad', icon: Leaf, color: 'text-emerald-700', bg: 'bg-emerald-100', cardBg: 'bg-emerald-50 border-emerald-200' },
-  '7D': { label: '7D', desc: 'Ciclo de Vida', icon: Building2, color: 'text-purple-700', bg: 'bg-purple-100', cardBg: 'bg-purple-50 border-purple-200' },
+const DIMENSION_INFO: Record<string, { label: string; desc: string; icon: any; color: string; bg: string; cardBg: string; border: string; gradient: string }> = {
+  '3D': { label: '3D', desc: 'Modelo Geométrico', icon: Box, color: 'text-blue-700', bg: 'bg-blue-100', cardBg: 'bg-blue-50 border-blue-200', border: 'border-blue-300', gradient: 'from-blue-500 to-blue-600' },
+  '4D': { label: '4D', desc: 'Tiempo', icon: Timer, color: 'text-green-700', bg: 'bg-green-100', cardBg: 'bg-green-50 border-green-200', border: 'border-green-300', gradient: 'from-green-500 to-green-600' },
+  '5D': { label: '5D', desc: 'Costos', icon: DollarSign, color: 'text-orange-700', bg: 'bg-orange-100', cardBg: 'bg-orange-50 border-orange-200', border: 'border-orange-300', gradient: 'from-orange-500 to-orange-600' },
+  '6D': { label: '6D', desc: 'Sostenibilidad', icon: Leaf, color: 'text-emerald-700', bg: 'bg-emerald-100', cardBg: 'bg-emerald-50 border-emerald-200', border: 'border-emerald-300', gradient: 'from-emerald-500 to-emerald-600' },
+  '7D': { label: '7D', desc: 'Ciclo de Vida', icon: Building2, color: 'text-purple-700', bg: 'bg-purple-100', cardBg: 'bg-purple-50 border-purple-200', border: 'border-purple-300', gradient: 'from-purple-500 to-purple-600' },
 };
 
 export default function ProjectDetail() {
@@ -46,6 +46,9 @@ export default function ProjectDetail() {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
+  const [analyzingDim, setAnalyzingDim] = useState<string | null>(null);
+  const [dimResults, setDimResults] = useState<Record<string, string>>({});
+  const [dimErrors, setDimErrors] = useState<Record<string, string>>({});
   const [newTask, setNewTask] = useState({ name: '', description: '', priority: 'medium', phase: '', dimension: '', startDate: '', endDate: '', estimatedHours: '' });
 
   const fetchProject = async () => {
@@ -97,10 +100,24 @@ export default function ProjectDetail() {
     try {
       const res = await api.post(`/projects/${id}/ai-analyze`);
       setAiAnalysis(res.data.analysis);
-    } catch (err) {
-      setAiAnalysis('Error al analizar con IA. Verifica la configuración de Gemini API.');
+    } catch (err: any) {
+      setAiAnalysis(err?.response?.data?.error || 'Error al analizar con IA');
     } finally {
       setAnalyzing(false);
+    }
+  };
+
+  const analyzeDimension = async (dim: string) => {
+    setAnalyzingDim(dim);
+    setDimResults((prev) => ({ ...prev, [dim]: '' }));
+    setDimErrors((prev) => ({ ...prev, [dim]: '' }));
+    try {
+      const res = await api.post(`/projects/${id}/dimension/${dim}`);
+      setDimResults((prev) => ({ ...prev, [dim]: res.data.analysis }));
+    } catch (err: any) {
+      setDimErrors((prev) => ({ ...prev, [dim]: err?.response?.data?.error || 'Error al analizar' }));
+    } finally {
+      setAnalyzingDim(null);
     }
   };
 
@@ -134,7 +151,7 @@ export default function ProjectDetail() {
         </div>
         <button onClick={analyzeWithAI} disabled={analyzing} className="flex items-center gap-2 px-5 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors">
           <Sparkles className={`h-5 w-5 ${analyzing ? 'animate-spin' : ''}`} />
-          {analyzing ? 'Analizando...' : 'Análisis IA'}
+          {analyzing ? 'Analizando...' : 'Análisis General IA'}
         </button>
       </div>
 
@@ -142,31 +159,57 @@ export default function ProjectDetail() {
         <div className="bg-purple-50 border border-purple-200 rounded-xl p-6 mb-8">
           <div className="flex items-center gap-2 text-purple-700 font-semibold mb-3">
             <Sparkles className="h-5 w-5" />
-            Análisis del Proyecto
+            Análisis General del Proyecto
           </div>
           <div className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">{aiAnalysis}</div>
         </div>
       )}
 
-      {project.dimensions && project.dimensions.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Dimensiones BIM</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            {project.dimensions.map((dim) => {
-              const info = DIMENSION_INFO[dim];
-              if (!info) return null;
-              const Icon = info.icon;
-              return (
-                <div key={dim} className={`${info.cardBg} border rounded-xl p-4 text-center hover:shadow-md transition-shadow`}>
-                  <Icon className={`h-8 w-8 ${info.color} mx-auto mb-2`} />
+      <div className="mb-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Agentes IA por Dimensión BIM</h2>
+        <p className="text-gray-500 text-sm mb-4">Selecciona una dimensión para que el agente IA analice el proyecto desde esa perspectiva</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          {project.dimensions?.map((dim) => {
+            const info = DIMENSION_INFO[dim];
+            if (!info) return null;
+            const Icon = info.icon;
+            const isAnalyzing = analyzingDim === dim;
+            const result = dimResults[dim];
+            const error = dimErrors[dim];
+            return (
+              <div key={dim} className={`${info.cardBg} border rounded-xl overflow-hidden hover:shadow-lg transition-all`}>
+                <div className="p-4 text-center">
+                  <Icon className={`h-10 w-10 ${info.color} mx-auto mb-2`} />
                   <div className={`font-bold text-lg ${info.color}`}>{info.label}</div>
-                  <div className="text-xs text-gray-500 mt-1">{info.desc}</div>
+                  <div className="text-xs text-gray-500 mt-1 mb-3">{info.desc}</div>
+                  <button
+                    onClick={() => analyzeDimension(dim)}
+                    disabled={isAnalyzing}
+                    className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-white rounded-lg text-xs font-medium transition-all bg-gradient-to-r ${info.gradient} hover:opacity-90 disabled:opacity-50`}
+                  >
+                    {isAnalyzing ? (
+                      <><Loader2 className="h-3 w-3 animate-spin" /> Analizando...</>
+                    ) : (
+                      <><Sparkles className="h-3 w-3" /> Analizar con IA</>
+                    )}
+                  </button>
+                  {error && (
+                    <div className="mt-2 flex items-start gap-1 text-xs text-red-600 bg-red-50 p-2 rounded">
+                      <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                      <span>{error}</span>
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-          </div>
+                {result && (
+                  <div className="border-t border-gray-200 p-4 bg-white">
+                    <div className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">{result}</div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-      )}
+      </div>
 
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">Tareas del Proyecto</h2>
