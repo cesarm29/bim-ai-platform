@@ -1,5 +1,4 @@
 import express from 'express';
-import path from 'path';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -54,17 +53,9 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/ai', aiRoutes);
 
-app.use('/api/*', (_req, res) => {
+app.use((_req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
 });
-
-if (process.env.NODE_ENV === 'production') {
-  const frontendDist = path.resolve(process.cwd(), 'frontend/dist');
-  app.use(express.static(frontendDist));
-  app.get('*', (_req, res) => {
-    res.sendFile(path.join(frontendDist, 'index.html'));
-  });
-}
 
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Error:', err);
