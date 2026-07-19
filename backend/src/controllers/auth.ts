@@ -317,7 +317,7 @@ export async function googleCallback(req: Request, res: Response) {
       }),
     });
 
-    const tokens: { id_token?: string } = await tokenRes.json();
+    const tokens = await tokenRes.json() as { id_token?: string };
     if (!tokens.id_token) {
       return res.status(400).json({ error: 'Error al obtener token de Google' });
     }
