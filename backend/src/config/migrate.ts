@@ -9,6 +9,7 @@ async function migrate() {
       email VARCHAR(255) UNIQUE NOT NULL,
       password_hash VARCHAR(255) NOT NULL,
       full_name VARCHAR(255) NOT NULL,
+      role VARCHAR(20) NOT NULL DEFAULT 'user',
       avatar_url TEXT,
       google_id VARCHAR(255) UNIQUE,
       is_verified BOOLEAN DEFAULT false,
@@ -51,6 +52,7 @@ async function migrate() {
       status VARCHAR(50) DEFAULT 'planning',
       start_date DATE,
       end_date DATE,
+      dimensions JSONB DEFAULT '["3D","4D","5D"]',
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW()
     );
@@ -105,6 +107,7 @@ async function migrate() {
       estimated_hours NUMERIC(10,2),
       actual_hours NUMERIC(10,2),
       phase VARCHAR(100),
+      dimension VARCHAR(10),
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW()
     );

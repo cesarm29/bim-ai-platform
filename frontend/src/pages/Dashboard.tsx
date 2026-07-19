@@ -12,14 +12,31 @@ interface Project {
   start_date: string;
   end_date: string;
   created_at: string;
+  dimensions: string[];
   model_count: number;
   task_count: number;
 }
 
+const DIMENSIONS = [
+  { id: '3D', label: '3D', desc: 'Modelo Geométrico', color: 'blue' },
+  { id: '4D', label: '4D', desc: 'Tiempo', color: 'green' },
+  { id: '5D', label: '5D', desc: 'Costos', color: 'orange' },
+  { id: '6D', label: '6D', desc: 'Sostenibilidad', color: 'emerald' },
+  { id: '7D', label: '7D', desc: 'Ciclo de Vida', color: 'purple' },
+];
+
+const dimColors: Record<string, string> = {
+  '3D': 'bg-blue-100 text-blue-700 border-blue-200',
+  '4D': 'bg-green-100 text-green-700 border-green-200',
+  '5D': 'bg-orange-100 text-orange-700 border-orange-200',
+  '6D': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  '7D': 'bg-purple-100 text-purple-700 border-purple-200',
+};
+
 export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [showCreate, setShowCreate] = useState(false);
-  const [newProject, setNewProject] = useState({ name: '', description: '', location: '', startDate: '', endDate: '' });
+  const [newProject, setNewProject] = useState({ name: '', description: '', location: '', startDate: '', endDate: '', dimensions: ['3D', '4D', '5D'] });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -41,7 +58,7 @@ export default function Dashboard() {
       const res = await api.post('/projects', newProject);
       setProjects([res.data, ...projects]);
       setShowCreate(false);
-      setNewProject({ name: '', description: '', location: '', startDate: '', endDate: '' });
+      setNewProject({ name: '', description: '', location: '', startDate: '', endDate: '', dimensions: ['3D', '4D', '5D'] });
     } catch (err) {
       console.error('Error creating project:', err);
     }
@@ -150,6 +167,34 @@ export default function Dashboard() {
                   />
                 </div>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Dimensiones BIM</label>
+                <div className="flex flex-wrap gap-2">
+                  {DIMENSIONS.map((dim) => {
+                    const active = newProject.dimensions.includes(dim.id);
+                    return (
+                      <button
+                        key={dim.id}
+                        type="button"
+                        onClick={() => setNewProject({
+                          ...newProject,
+                          dimensions: active
+                            ? newProject.dimensions.filter((d) => d !== dim.id)
+                            : [...newProject.dimensions, dim.id],
+                        })}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                          active
+                            ? dimColors[dim.id] + ' ring-2 ring-offset-1'
+                            : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300'
+                        }`}
+                        title={dim.desc}
+                      >
+                        {dim.label} {dim.desc}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setShowCreate(false)} className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">Cancelar</button>
@@ -203,6 +248,16 @@ export default function Dashboard() {
                   </span>
                 )}
               </div>
+
+              {project.dimensions && project.dimensions.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {project.dimensions.map((dim) => (
+                    <span key={dim} className={`text-xs font-medium px-2 py-0.5 rounded border ${dimColors[dim] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                      {dim}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               <div className="flex items-center gap-4 text-sm text-gray-500">
                 <span>{project.model_count || 0} modelos</span>

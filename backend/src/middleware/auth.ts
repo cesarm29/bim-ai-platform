@@ -11,7 +11,17 @@ const REFRESH_EXPIRY_DAYS = 7;
 export interface AuthRequest extends Request {
   userId?: string;
   userEmail?: string;
+  userRole?: string;
   sessionId?: string;
+}
+
+export function requireRole(...roles: string[]) {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.userRole || !roles.includes(req.userRole)) {
+      return res.status(403).json({ error: 'No tienes permisos para esta acción' });
+    }
+    next();
+  };
 }
 
 export function authenticate(req: AuthRequest, res: Response, next: NextFunction) {
@@ -25,6 +35,7 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
     const decoded = jwt.verify(token, ACCESS_SECRET) as {
       userId: string;
       email: string;
+      role: string;
       type: string;
     };
     if (decoded.type !== 'access') {
@@ -32,6 +43,7 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
     }
     req.userId = decoded.userId;
     req.userEmail = decoded.email;
+    req.userRole = decoded.role;
     next();
   } catch (err: any) {
     if (err.name === 'TokenExpiredError') {
@@ -41,9 +53,9 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
   }
 }
 
-export function generateAccessToken(userId: string, email: string): string {
+export function generateAccessToken(userId: string, email: string, role: string = 'user'): string {
   return jwt.sign(
-    { userId, email, type: 'access' },
+    { userId, email, role, type: 'access' },
     ACCESS_SECRET,
     { expiresIn: ACCESS_EXPIRY }
   );
@@ -112,8 +124,8 @@ export async function revokeAllUserSessions(userId: string): Promise<void> {
   await query('UPDATE refresh_tokens SET is_revoked = true WHERE user_id = $1', [userId]);
 }
 
-export function generateTokenPair(userId: string, email: string, deviceInfo?: string, ipAddress?: string) {
-  const accessToken = generateAccessToken(userId, email);
+export function generateTokenPair(userId: string, email: string, role: string = 'user', deviceInfo?: string, ipAddress?: string) {
+  const accessToken = generateAccessToken(userId, email, role);
   return generateRefreshToken(userId, deviceInfo, ipAddress).then((refreshToken) => ({
     accessToken,
     refreshToken,

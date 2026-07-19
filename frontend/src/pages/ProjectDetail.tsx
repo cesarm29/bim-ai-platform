@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Sparkles, MessageSquare, Calendar, Clock, Trash2, CheckCircle2, Circle } from 'lucide-react';
+import { ArrowLeft, Plus, Sparkles, MessageSquare, Calendar, Clock, Trash2, CheckCircle2, Circle, Box, Timer, DollarSign, Leaf, Building2 } from 'lucide-react';
 import api from '../services/api';
 
 interface Task {
@@ -10,6 +10,7 @@ interface Task {
   status: string;
   priority: string;
   phase: string;
+  dimension: string;
   start_date: string;
   end_date: string;
   assigned_to: string;
@@ -25,8 +26,17 @@ interface Project {
   status: string;
   start_date: string;
   end_date: string;
+  dimensions: string[];
   tasks: Task[];
 }
+
+const DIMENSION_INFO: Record<string, { label: string; desc: string; icon: any; color: string; bg: string; cardBg: string }> = {
+  '3D': { label: '3D', desc: 'Modelo Geométrico', icon: Box, color: 'text-blue-700', bg: 'bg-blue-100', cardBg: 'bg-blue-50 border-blue-200' },
+  '4D': { label: '4D', desc: 'Tiempo', icon: Timer, color: 'text-green-700', bg: 'bg-green-100', cardBg: 'bg-green-50 border-green-200' },
+  '5D': { label: '5D', desc: 'Costos', icon: DollarSign, color: 'text-orange-700', bg: 'bg-orange-100', cardBg: 'bg-orange-50 border-orange-200' },
+  '6D': { label: '6D', desc: 'Sostenibilidad', icon: Leaf, color: 'text-emerald-700', bg: 'bg-emerald-100', cardBg: 'bg-emerald-50 border-emerald-200' },
+  '7D': { label: '7D', desc: 'Ciclo de Vida', icon: Building2, color: 'text-purple-700', bg: 'bg-purple-100', cardBg: 'bg-purple-50 border-purple-200' },
+};
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -36,7 +46,7 @@ export default function ProjectDetail() {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
-  const [newTask, setNewTask] = useState({ name: '', description: '', priority: 'medium', phase: '', startDate: '', endDate: '', estimatedHours: '' });
+  const [newTask, setNewTask] = useState({ name: '', description: '', priority: 'medium', phase: '', dimension: '', startDate: '', endDate: '', estimatedHours: '' });
 
   const fetchProject = async () => {
     try {
@@ -54,9 +64,9 @@ export default function ProjectDetail() {
   const createTask = async () => {
     if (!newTask.name) return;
     try {
-      await api.post('/tasks', { projectId: id, ...newTask, estimatedHours: newTask.estimatedHours ? Number(newTask.estimatedHours) : null });
+      await api.post('/tasks', { projectId: id, name: newTask.name, description: newTask.description, priority: newTask.priority, phase: newTask.phase, dimension: newTask.dimension || null, startDate: newTask.startDate || null, endDate: newTask.endDate || null, estimatedHours: newTask.estimatedHours ? Number(newTask.estimatedHours) : null });
       setShowTaskForm(false);
-      setNewTask({ name: '', description: '', priority: 'medium', phase: '', startDate: '', endDate: '', estimatedHours: '' });
+      setNewTask({ name: '', description: '', priority: 'medium', phase: '', dimension: '', startDate: '', endDate: '', estimatedHours: '' });
       fetchProject();
     } catch (err) {
       console.error('Error:', err);
@@ -138,6 +148,26 @@ export default function ProjectDetail() {
         </div>
       )}
 
+      {project.dimensions && project.dimensions.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Dimensiones BIM</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {project.dimensions.map((dim) => {
+              const info = DIMENSION_INFO[dim];
+              if (!info) return null;
+              const Icon = info.icon;
+              return (
+                <div key={dim} className={`${info.cardBg} border rounded-xl p-4 text-center hover:shadow-md transition-shadow`}>
+                  <Icon className={`h-8 w-8 ${info.color} mx-auto mb-2`} />
+                  <div className={`font-bold text-lg ${info.color}`}>{info.label}</div>
+                  <div className="text-xs text-gray-500 mt-1">{info.desc}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">Tareas del Proyecto</h2>
         <button onClick={() => setShowTaskForm(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
@@ -169,6 +199,15 @@ export default function ProjectDetail() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Fase</label>
               <input type="text" value={newTask.phase} onChange={(e) => setNewTask({ ...newTask, phase: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Diseño, Estructura,..." />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Dimensión BIM</label>
+              <select value={newTask.dimension} onChange={(e) => setNewTask({ ...newTask, dimension: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="">Sin dimensión</option>
+                {project.dimensions?.map((dim) => (
+                  <option key={dim} value={dim}>{dim} - {DIMENSION_INFO[dim]?.desc}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Inicio</label>
@@ -217,6 +256,11 @@ export default function ProjectDetail() {
                       {task.priority === 'low' ? 'Baja' : task.priority === 'medium' ? 'Media' : task.priority === 'high' ? 'Alta' : 'Crítica'}
                     </span>
                     {task.phase && <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">{task.phase}</span>}
+                    {task.dimension && DIMENSION_INFO[task.dimension] && (
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${DIMENSION_INFO[task.dimension].color} ${DIMENSION_INFO[task.dimension].bg}`}>
+                        {task.dimension}
+                      </span>
+                    )}
                     {task.start_date && (
                       <span className="text-xs text-gray-400 flex items-center gap-1">
                         <Calendar className="h-3 w-3" />

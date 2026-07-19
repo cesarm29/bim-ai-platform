@@ -5,17 +5,19 @@ import { analyzeProjectData } from '../config/ai';
 
 export async function createProject(req: AuthRequest, res: Response) {
   try {
-    const { name, description, location, startDate, endDate } = req.body;
+    const { name, description, location, startDate, endDate, dimensions } = req.body;
 
     if (!name) {
       return res.status(400).json({ error: 'Nombre del proyecto requerido' });
     }
 
+    const dims = JSON.stringify(dimensions || ['3D', '4D', '5D']);
+
     const result = await query(
-      `INSERT INTO projects (user_id, name, description, location, start_date, end_date)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, name, description, location, status, start_date, end_date, created_at`,
-      [req.userId, name, description || '', location || '', startDate || null, endDate || null]
+      `INSERT INTO projects (user_id, name, description, location, start_date, end_date, dimensions)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+       RETURNING id, name, description, location, status, start_date, end_date, dimensions, created_at`,
+      [req.userId, name, description || '', location || '', startDate || null, endDate || null, dims]
     );
 
     res.status(201).json(result.rows[0]);
@@ -29,7 +31,7 @@ export async function listProjects(req: AuthRequest, res: Response) {
   try {
     const result = await query(
       `SELECT p.id, p.name, p.description, p.location, p.status,
-              p.start_date, p.end_date, p.created_at,
+              p.start_date, p.end_date, p.dimensions, p.created_at,
               (SELECT COUNT(*) FROM models WHERE project_id = p.id) as model_count,
               (SELECT COUNT(*) FROM tasks WHERE project_id = p.id) as task_count
        FROM projects p
@@ -71,7 +73,7 @@ export async function getProject(req: AuthRequest, res: Response) {
 export async function updateProject(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
-    const { name, description, location, status, startDate, endDate } = req.body;
+    const { name, description, location, status, startDate, endDate, dimensions } = req.body;
 
     const result = await query(
       `UPDATE projects SET
@@ -81,10 +83,11 @@ export async function updateProject(req: AuthRequest, res: Response) {
         status = COALESCE($4, status),
         start_date = COALESCE($5, start_date),
         end_date = COALESCE($6, end_date),
+        dimensions = COALESCE($7::jsonb, dimensions),
         updated_at = NOW()
-       WHERE id = $7 AND user_id = $8
+       WHERE id = $8 AND user_id = $9
        RETURNING *`,
-      [name, description, location, status, startDate, endDate, id, req.userId]
+      [name, description, location, status, startDate, endDate, dimensions ? JSON.stringify(dimensions) : null, id, req.userId]
     );
 
     if (result.rows.length === 0) {
@@ -122,7 +125,7 @@ export async function aiAnalyzeProject(req: AuthRequest, res: Response) {
     const { id } = req.params;
 
     const project = await query(
-      'SELECT name, description, location FROM projects WHERE id = $1 AND user_id = $2',
+      'SELECT name, description, location, dimensions FROM projects WHERE id = $1 AND user_id = $2',
       [id, req.userId]
     );
 
@@ -135,6 +138,7 @@ export async function aiAnalyzeProject(req: AuthRequest, res: Response) {
       projectName: p.name,
       description: p.description || '',
       location: p.location || undefined,
+      dimensions: p.dimensions,
     });
 
     res.json({ analysis });

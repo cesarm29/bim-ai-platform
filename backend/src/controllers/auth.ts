@@ -34,12 +34,12 @@ export async function register(req: Request, res: Response) {
     const result = await query(
       `INSERT INTO users (email, password_hash, full_name, is_verified)
        VALUES ($1, $2, $3, true)
-       RETURNING id, email, full_name, created_at`,
+       RETURNING id, email, full_name, role, created_at`,
       [email, passwordHash, fullName]
     );
 
     const user = result.rows[0];
-    const accessToken = generateAccessToken(user.id, user.email);
+    const accessToken = generateAccessToken(user.id, user.email, user.role);
     const refreshToken = await generateRefreshToken(
       user.id,
       req.headers['user-agent'],
@@ -54,6 +54,7 @@ export async function register(req: Request, res: Response) {
         id: user.id,
         email: user.email,
         fullName: user.full_name,
+        role: user.role,
         createdAt: user.created_at,
       },
     });
@@ -71,7 +72,7 @@ export async function login(req: Request, res: Response) {
     }
 
     const result = await query(
-      'SELECT id, email, password_hash, full_name FROM users WHERE email = $1',
+      'SELECT id, email, password_hash, full_name, role FROM users WHERE email = $1',
       [email]
     );
 
@@ -85,7 +86,7 @@ export async function login(req: Request, res: Response) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    const accessToken = generateAccessToken(user.id, user.email);
+    const accessToken = generateAccessToken(user.id, user.email, user.role);
     const refreshToken = await generateRefreshToken(
       user.id,
       req.headers['user-agent'],
@@ -100,6 +101,7 @@ export async function login(req: Request, res: Response) {
         id: user.id,
         email: user.email,
         fullName: user.full_name,
+        role: user.role,
       },
     });
   } catch (err) {
@@ -164,7 +166,7 @@ export async function logout(req: AuthRequest, res: Response) {
 export async function getProfile(req: AuthRequest, res: Response) {
   try {
     const result = await query(
-      'SELECT id, email, full_name, avatar_url, created_at FROM users WHERE id = $1',
+      'SELECT id, email, full_name, role, avatar_url, created_at FROM users WHERE id = $1',
       [req.userId]
     );
 
@@ -177,6 +179,7 @@ export async function getProfile(req: AuthRequest, res: Response) {
       id: user.id,
       email: user.email,
       fullName: user.full_name,
+      role: user.role,
       avatarUrl: user.avatar_url,
       createdAt: user.created_at,
     });
@@ -328,7 +331,7 @@ export async function googleCallback(req: Request, res: Response) {
     const name = payload.name || email.split('@')[0];
     const avatar = payload.picture;
 
-    let user = await query('SELECT id, email FROM users WHERE google_id = $1', [googleId]);
+    let user = await query('SELECT id, email, role FROM users WHERE google_id = $1', [googleId]);
 
     if (user.rows.length === 0) {
       const existing = await query('SELECT id FROM users WHERE email = $1', [email]);

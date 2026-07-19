@@ -4,17 +4,17 @@ import { query } from '../config/database';
 
 export async function createTask(req: AuthRequest, res: Response) {
   try {
-    const { projectId, name, description, priority, startDate, endDate, assignedTo, estimatedHours, phase } = req.body;
+    const { projectId, name, description, priority, startDate, endDate, assignedTo, estimatedHours, phase, dimension } = req.body;
 
     if (!projectId || !name) {
       return res.status(400).json({ error: 'projectId y name requeridos' });
     }
 
     const result = await query(
-      `INSERT INTO tasks (project_id, name, description, priority, start_date, end_date, assigned_to, estimated_hours, phase)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO tasks (project_id, name, description, priority, start_date, end_date, assigned_to, estimated_hours, phase, dimension)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
-      [projectId, name, description || '', priority || 'medium', startDate || null, endDate || null, assignedTo || null, estimatedHours || null, phase || null]
+      [projectId, name, description || '', priority || 'medium', startDate || null, endDate || null, assignedTo || null, estimatedHours || null, phase || null, dimension || null]
     );
 
     res.status(201).json(result.rows[0]);
@@ -41,7 +41,7 @@ export async function listTasks(req: AuthRequest, res: Response) {
 export async function updateTask(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
-    const { name, description, status, priority, startDate, endDate, assignedTo, estimatedHours, actualHours, phase } = req.body;
+    const { name, description, status, priority, startDate, endDate, assignedTo, estimatedHours, actualHours, phase, dimension } = req.body;
 
     const result = await query(
       `UPDATE tasks SET
@@ -55,9 +55,10 @@ export async function updateTask(req: AuthRequest, res: Response) {
         estimated_hours = COALESCE($8, estimated_hours),
         actual_hours = COALESCE($9, actual_hours),
         phase = COALESCE($10, phase),
+        dimension = COALESCE($11, dimension),
         updated_at = NOW()
-       WHERE id = $11 RETURNING *`,
-      [name, description, status, priority, startDate, endDate, assignedTo, estimatedHours, actualHours, phase, id]
+       WHERE id = $12 RETURNING *`,
+      [name, description, status, priority, startDate, endDate, assignedTo, estimatedHours, actualHours, phase, dimension, id]
     );
 
     if (result.rows.length === 0) {
