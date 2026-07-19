@@ -3,6 +3,15 @@ import { AuthRequest } from '../middleware/auth';
 import { query } from '../config/database';
 import { chatWithAI, analyzeProjectData } from '../config/ai';
 
+function handleAIError(err: any, res: Response) {
+  const msg = err?.message || '';
+  if (msg.includes('429') || msg.includes('quota') || msg.includes('Quota')) {
+    return res.status(429).json({ error: 'Límite de la API gratuita alcanzado. Espera un momento y vuelve a intentar.' });
+  }
+  console.error('AI error:', err);
+  return res.status(500).json({ error: 'Error al procesar consulta con IA' });
+}
+
 export async function chat(req: AuthRequest, res: Response) {
   try {
     const { message, conversationId, projectContext } = req.body;
@@ -53,8 +62,7 @@ export async function chat(req: AuthRequest, res: Response) {
       response: aiResponse,
     });
   } catch (err) {
-    console.error('AI chat error:', err);
-    res.status(500).json({ error: 'Error al procesar consulta con IA' });
+    handleAIError(err, res);
   }
 }
 
@@ -63,7 +71,7 @@ export async function analyzeProject(req: AuthRequest, res: Response) {
     const { projectId } = req.params;
 
     const project = await query(
-      'SELECT name, description, location FROM projects WHERE id = $1 AND user_id = $2',
+      'SELECT name, description, location, dimensions FROM projects WHERE id = $1 AND user_id = $2',
       [projectId, req.userId]
     );
 
@@ -76,12 +84,12 @@ export async function analyzeProject(req: AuthRequest, res: Response) {
       projectName: p.name,
       description: p.description || '',
       location: p.location || undefined,
+      dimensions: p.dimensions || undefined,
     });
 
     res.json({ analysis });
   } catch (err) {
-    console.error('AI analyze error:', err);
-    res.status(500).json({ error: 'Error al analizar proyecto' });
+    handleAIError(err, res);
   }
 }
 

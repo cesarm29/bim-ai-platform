@@ -30,7 +30,7 @@ export async function chatWithAI(
   message: string,
   history: { role: string; content: string }[]
 ) {
-  const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
   const chat = model.startChat({
     history: history.map((m) => ({
@@ -52,7 +52,7 @@ export async function analyzeProjectData(data: {
   area?: number;
   floors?: number;
 }) {
-  const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
   const dims = data.dimensions?.join(', ') || '3D, 4D, 5D';
 
   const prompt = `Analiza el siguiente proyecto de construcción y proporciona:
