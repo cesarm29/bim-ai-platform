@@ -1,8 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-
-const MODELS = ['gemini-3-flash-preview', 'gemini-2.0-flash'];
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 const BIM_SYSTEM_PROMPT = `Eres un experto en BIM (Building Information Modeling) y construcción.
 Ayudas a arquitectos, ingenieros y constructores a optimizar sus proyectos.
@@ -27,80 +27,6 @@ Puedes responder sobre:
 
 Responde de forma clara y técnica, usando español.
 Si te preguntan algo fuera del ámbito BIM, redirige amablemente al tema.`;
-
-async function withRetry<T>(fn: (model: string) => Promise<T>, retries = 2): Promise<T> {
-  for (const model of MODELS) {
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        return await fn(model);
-      } catch (err: any) {
-        const msg = err?.message || '';
-        const isQuota = msg.includes('429') || msg.includes('quota') || msg.includes('Quota');
-        if (isQuota && attempt < retries) {
-          const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
-          await new Promise((r) => setTimeout(r, delay));
-          continue;
-        }
-        if (isQuota && model === MODELS[MODELS.length - 1]) throw err;
-        if (!isQuota) throw err;
-        break;
-      }
-    }
-  }
-  throw new Error('Todos los modelos sin cuota disponible');
-}
-
-export async function chatWithAI(
-  message: string,
-  history: { role: string; content: string }[]
-) {
-  return withRetry(async (modelName) => {
-    const model = genAI.getGenerativeModel({ model: modelName });
-    const chat = model.startChat({
-      history: history.map((m) => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }],
-      })),
-      systemInstruction: BIM_SYSTEM_PROMPT,
-    });
-    const result = await chat.sendMessage(message);
-    return result.response.text();
-  });
-}
-
-export async function analyzeProjectData(data: {
-  projectName: string;
-  description: string;
-  location?: string;
-  dimensions?: string[];
-  area?: number;
-  floors?: number;
-}) {
-  return withRetry(async (modelName) => {
-    const model = genAI.getGenerativeModel({ model: modelName });
-    const dims = data.dimensions?.join(', ') || '3D, 4D, 5D';
-
-    const prompt = `Analiza el siguiente proyecto de construcción y proporciona:
-1. Estimación de tiempos por fase (Dimensión 4D)
-2. Recomendaciones de optimización de costos (Dimensión 5D)
-3. Posibles riesgos y detección de conflictos (Dimensión 3D)
-4. Sugerencias de sostenibilidad y eficiencia energética (Dimensión 6D)
-5. Recomendaciones para mantenimiento y ciclo de vida (Dimensión 7D)
-
-Datos del proyecto:
-- Nombre: ${data.projectName}
-- Descripción: ${data.description}
-- Ubicación: ${data.location || 'No especificada'}
-- Dimensiones BIM activas: ${dims}
-- Área: ${data.area || 'No especificada'} m²
-- Pisos: ${data.floors || 'No especificado'}
-
-Enfócate en las dimensiones activas del proyecto: ${dims}. Si alguna dimensión no está activa, menciónala brevemente como oportunidad de mejora.`;
-
-    const result = await model.generateContent(prompt);
-    return result.response.text();
-  });
-}
 
 const DIMENSION_PROMPTS: Record<string, string> = {
   '3D': `Eres un Agente BIM especializado en la Dimensión 3D - Modelo Geométrico.
@@ -159,6 +85,152 @@ Basado en los datos del proyecto, proporciona:
 5. Sugerencias para la digitalización del mantenimiento`,
 };
 
+async function callGroq(
+  messages: { role: string; content: string }[],
+  systemPrompt: string
+): Promise<string> {
+  const res = await fetch(GROQ_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${GROQ_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'llama3-70b-8192',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...messages,
+      ],
+      max_tokens: 4096,
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Groq ${res.status}: ${text}`);
+  }
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+async function callGeminiWithRetry(
+  modelName: string,
+  prompt: string,
+  systemInstruction?: string,
+  history?: { role: string; content: string }[]
+): Promise<string> {
+  const model = genAI.getGenerativeModel({ model: modelName });
+
+  if (history) {
+    const chat = model.startChat({
+      history: history.map((m) => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }],
+      })),
+      systemInstruction,
+    });
+    const result = await chat.sendMessage(prompt);
+    return result.response.text();
+  }
+
+  const result = await model.generateContent(
+    systemInstruction
+      ? { contents: [{ role: 'user', parts: [{ text: prompt }] }], systemInstruction: { role: 'user', parts: [{ text: systemInstruction }] } }
+      : prompt
+  );
+  return result.response.text();
+}
+
+async function withFallback<T>(
+  primary: () => Promise<T>,
+  fallback: () => Promise<T>
+): Promise<T> {
+  try {
+    return await primary();
+  } catch (err: any) {
+    console.error('Primary AI provider failed:', err?.message);
+    return await fallback();
+  }
+}
+
+export async function chatWithAI(
+  message: string,
+  history: { role: string; content: string }[]
+) {
+  const useGroq = !!GROQ_API_KEY;
+
+  if (useGroq) {
+    return withFallback(
+      () => callGroq(
+        [...history, { role: 'user', content: message }],
+        BIM_SYSTEM_PROMPT
+      ),
+      async () => {
+        const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+        const chat = model.startChat({
+          history: history.map((m) => ({
+            role: m.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: m.content }],
+          })),
+          systemInstruction: BIM_SYSTEM_PROMPT,
+        });
+        const result = await chat.sendMessage(message);
+        return result.response.text();
+      }
+    );
+  }
+
+  const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+  const chat = model.startChat({
+    history: history.map((m) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    })),
+    systemInstruction: BIM_SYSTEM_PROMPT,
+  });
+  const result = await chat.sendMessage(message);
+  return result.response.text();
+}
+
+export async function analyzeProjectData(data: {
+  projectName: string;
+  description: string;
+  location?: string;
+  dimensions?: string[];
+  area?: number;
+  floors?: number;
+}) {
+  const dims = data.dimensions?.join(', ') || '3D, 4D, 5D';
+  const prompt = `Analiza el siguiente proyecto de construcción y proporciona:
+1. Estimación de tiempos por fase (Dimensión 4D)
+2. Recomendaciones de optimización de costos (Dimensión 5D)
+3. Posibles riesgos y detección de conflictos (Dimensión 3D)
+4. Sugerencias de sostenibilidad y eficiencia energética (Dimensión 6D)
+5. Recomendaciones para mantenimiento y ciclo de vida (Dimensión 7D)
+
+Datos del proyecto:
+- Nombre: ${data.projectName}
+- Descripción: ${data.description}
+- Ubicación: ${data.location || 'No especificada'}
+- Dimensiones BIM activas: ${dims}
+- Área: ${data.area || 'No especificada'} m²
+- Pisos: ${data.floors || 'No especificado'}
+
+Enfócate en las dimensiones activas del proyecto: ${dims}. Si alguna dimensión no está activa, menciónala brevemente como oportunidad de mejora.`;
+
+  const useGroq = !!GROQ_API_KEY;
+
+  if (useGroq) {
+    return withFallback(
+      () => callGroq([{ role: 'user', content: prompt }], BIM_SYSTEM_PROMPT),
+      () => callGeminiWithRetry('gemini-3-flash-preview', prompt, BIM_SYSTEM_PROMPT)
+    );
+  }
+
+  return callGeminiWithRetry('gemini-3-flash-preview', prompt, BIM_SYSTEM_PROMPT);
+}
+
 export async function analyzeDimension(
   dimension: string,
   projectData: {
@@ -174,16 +246,14 @@ export async function analyzeDimension(
   const systemPrompt = DIMENSION_PROMPTS[dimension];
   if (!systemPrompt) throw new Error(`Dimensión ${dimension} no soportada`);
 
-  return withRetry(async (modelName) => {
-    const model = genAI.getGenerativeModel({ model: modelName });
-    const dims = projectData.dimensions?.join(', ') || '3D, 4D, 5D';
-    const tasksInfo = projectData.tasks?.length
-      ? projectData.tasks.map((t: any) =>
-          `- Tarea: ${t.name} | Estado: ${t.status} | Prioridad: ${t.priority} | Dimensión: ${t.dimension} | Horas est.: ${t.estimated_hours || 'N/A'}`
-        ).join('\n')
-      : 'Sin tareas registradas';
+  const dims = projectData.dimensions?.join(', ') || '3D, 4D, 5D';
+  const tasksInfo = projectData.tasks?.length
+    ? projectData.tasks.map((t: any) =>
+        `- Tarea: ${t.name} | Estado: ${t.status} | Prioridad: ${t.priority} | Dimensión: ${t.dimension} | Horas est.: ${t.estimated_hours || 'N/A'}`
+      ).join('\n')
+    : 'Sin tareas registradas';
 
-    const prompt = `Datos del proyecto:
+  const prompt = `Datos del proyecto:
 - Nombre: ${projectData.projectName}
 - Descripción: ${projectData.description}
 - Ubicación: ${projectData.location || 'No especificada'}
@@ -198,7 +268,14 @@ ${systemPrompt}
 
 Proporciona un análisis detallado y recomendaciones ACCIONABLES específicas para este proyecto.`;
 
-    const result = await model.generateContent(prompt);
-    return result.response.text();
-  });
+  const useGroq = !!GROQ_API_KEY;
+
+  if (useGroq) {
+    return withFallback(
+      () => callGroq([{ role: 'user', content: prompt }], systemPrompt),
+      () => callGeminiWithRetry('gemini-3-flash-preview', prompt, systemPrompt)
+    );
+  }
+
+  return callGeminiWithRetry('gemini-3-flash-preview', prompt, systemPrompt);
 }
