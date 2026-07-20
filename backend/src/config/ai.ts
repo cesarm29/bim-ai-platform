@@ -109,7 +109,7 @@ async function callGroq(
     throw new Error(`Groq ${res.status}: ${text}`);
   }
 
-  const data = await res.json();
+  const data: any = await res.json();
   return data.choices?.[0]?.message?.content || '';
 }
 
