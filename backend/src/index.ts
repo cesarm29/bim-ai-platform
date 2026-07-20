@@ -13,7 +13,7 @@ import memberRoutes from './routes/members';
 import modelRoutes from './routes/models';
 import analyticsRoutes from './routes/analytics';
 import reportRoutes from './routes/report';
-import { query } from './config/database';
+
 
 dotenv.config();
 
@@ -55,24 +55,6 @@ app.use((req, res, next) => {
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-app.get('/api/migrate', async (_req, res) => {
-  try {
-    await query(`CREATE TABLE IF NOT EXISTS project_members (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      role VARCHAR(20) NOT NULL DEFAULT 'editor',
-      invited_by UUID REFERENCES users(id),
-      created_at TIMESTAMP DEFAULT NOW(),
-      UNIQUE(project_id, user_id)
-    )`);
-    await query(`ALTER TABLE models ADD COLUMN IF NOT EXISTS file_content TEXT`);
-    res.json({ message: 'Migration completed' });
-  } catch (err: any) {
-    res.status(500).json({ error: 'Migration failed', detail: err.message });
-  }
 });
 
 app.use('/api/auth', authRoutes);
