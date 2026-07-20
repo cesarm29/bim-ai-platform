@@ -9,6 +9,10 @@ import taskRoutes from './routes/tasks';
 import aiRoutes from './routes/ai';
 import adminRoutes from './routes/admin';
 import dimensionRoutes from './routes/dimensions';
+import memberRoutes from './routes/members';
+import modelRoutes from './routes/models';
+import analyticsRoutes from './routes/analytics';
+import reportRoutes from './routes/report';
 
 dotenv.config();
 
@@ -58,6 +62,10 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/projects', dimensionRoutes);
+app.use('/api/projects', memberRoutes);
+app.use('/api/projects', modelRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/report', reportRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });

@@ -26,7 +26,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const active = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);
+              const active = item.path === '/' ? (location.pathname === '/' || location.pathname.startsWith('/projects')) : location.pathname.startsWith(item.path);
             return (
               <button
                 key={item.path}

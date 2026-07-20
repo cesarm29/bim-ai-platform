@@ -126,6 +126,20 @@ async function migrate() {
   await query(`ALTER TABLE projects ADD COLUMN IF NOT EXISTS dimensions JSONB DEFAULT '["3D","4D","5D"]'`);
   await query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS dimension VARCHAR(10)`);
 
+  await query(`
+    CREATE TABLE IF NOT EXISTS project_members (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      role VARCHAR(20) NOT NULL DEFAULT 'editor',
+      invited_by UUID REFERENCES users(id),
+      created_at TIMESTAMP DEFAULT NOW(),
+      UNIQUE(project_id, user_id)
+    );
+  `);
+
+  await query(`ALTER TABLE models ADD COLUMN IF NOT EXISTS file_content TEXT`);
+
   console.log('Migrations completed successfully');
   process.exit(0);
 }

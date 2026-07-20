@@ -41,9 +41,11 @@ export async function listProjects(req: AuthRequest, res: Response) {
     const result = await query(
       `SELECT p.id, p.name, p.description, p.location, p.status,
               p.start_date, p.end_date, p.dimensions, p.created_at,
+              u.full_name as owner_name,
               (SELECT COUNT(*) FROM models WHERE project_id = p.id) as model_count,
               (SELECT COUNT(*) FROM tasks WHERE project_id = p.id) as task_count
        FROM projects p
+       JOIN users u ON u.id = p.user_id
        WHERE p.user_id = $1
        ORDER BY p.created_at DESC`,
       [req.userId]
@@ -60,19 +62,32 @@ export async function getProject(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
     const result = await query(
-      `SELECT p.*,
-              (SELECT json_agg(m.*) FROM models m WHERE m.project_id = p.id) as models,
+      `SELECT p.*, u.full_name as owner_name, u.email as owner_email,
+              (SELECT json_agg(m.* ORDER BY m.created_at DESC) FROM models m WHERE m.project_id = p.id) as models,
               (SELECT json_agg(t.* ORDER BY t.created_at DESC) FROM tasks t WHERE t.project_id = p.id) as tasks
        FROM projects p
-       WHERE p.id = $1 AND p.user_id = $2`,
-      [id, req.userId]
+       JOIN users u ON u.id = p.user_id
+       WHERE p.id = $1`,
+      [id]
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Proyecto no encontrado' });
     }
 
-    res.json(result.rows[0]);
+    const project = result.rows[0];
+    const isOwner = project.user_id === req.userId;
+    if (!isOwner) {
+      const member = await query(
+        'SELECT 1 FROM project_members WHERE project_id = $1 AND user_id = $2',
+        [id, req.userId]
+      );
+      if (member.rows.length === 0) {
+        return res.status(403).json({ error: 'No tienes acceso a este proyecto' });
+      }
+    }
+
+    res.json(project);
   } catch (err) {
     console.error('Get project error:', err);
     res.status(500).json({ error: 'Error al obtener proyecto' });
