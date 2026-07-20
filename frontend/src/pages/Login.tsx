@@ -35,9 +35,9 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 md:p-8">
+        <div className="text-center mb-6 md:mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 bg-blue-100 rounded-full mb-4">
             <Building2 className="h-8 w-8 text-blue-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">BIM AI Platform</h1>
