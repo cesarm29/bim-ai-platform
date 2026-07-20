@@ -57,7 +57,7 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.post('/api/migrate', async (_req, res) => {
+app.all('/api/migrate', async (_req, res) => {
   try {
     await query(`CREATE TABLE IF NOT EXISTS project_members (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
