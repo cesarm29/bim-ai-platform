@@ -287,32 +287,30 @@ export default function ProjectDetail() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors w-fit">
           <ArrowLeft className="h-4 w-4" />
           Volver
         </button>
-        <div className="flex items-center gap-3">
-          <button onClick={analyzeWithAI} disabled={analyzing} className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <button onClick={analyzeWithAI} disabled={analyzing} className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors w-full sm:w-auto">
             <Sparkles className={`h-4 w-4 ${analyzing ? 'animate-spin' : ''}`} />
             {analyzing ? 'Analizando...' : 'Análisis General'}
           </button>
-          <button onClick={exportReport} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+          <button onClick={exportReport} className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors w-full sm:w-auto">
             <Download className="h-4 w-4" />
             Exportar Reporte
           </button>
         </div>
       </div>
 
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
-          {project.description && <p className="text-gray-500 mt-2">{project.description}</p>}
-          <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
-            {project.location && <span>{project.location}</span>}
-            {project.owner_name && <span>Propietario: {project.owner_name}</span>}
-            <span>{tasks.length} tareas</span>
-          </div>
+      <div className="mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 break-words">{project.name}</h1>
+        {project.description && <p className="text-gray-500 mt-2 text-sm md:text-base">{project.description}</p>}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-gray-400">
+          {project.location && <span>{project.location}</span>}
+          {project.owner_name && <span>Propietario: {project.owner_name}</span>}
+          <span>{tasks.length} tareas</span>
         </div>
       </div>
 
@@ -327,9 +325,9 @@ export default function ProjectDetail() {
       )}
 
       <div className="mb-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Agentes IA por Dimensión BIM</h2>
-        <p className="text-gray-500 text-sm mb-4">Cada agente analiza el proyecto desde su perspectiva usando datos reales de las tareas</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Agentes IA por Dimensión BIM</h2>
+        <p className="text-gray-500 text-xs md:text-sm mb-4">Cada agente analiza el proyecto desde su perspectiva usando datos reales de las tareas</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
           {project.dimensions?.map((dim) => {
             const info = DIMENSION_INFO[dim];
             if (!info) return null;
@@ -355,19 +353,19 @@ export default function ProjectDetail() {
         </div>
       </div>
 
-      <div className="mb-6 border-b border-gray-200">
-        <nav className="flex gap-6">
+      <div className="mb-6 border-b border-gray-200 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+        <nav className="flex gap-4 md:gap-6 min-w-max">
           {[
             { id: 'tasks' as const, label: 'Tareas', icon: CheckCircle2 },
-            { id: 'gantt' as const, label: 'Diagrama Gantt', icon: BarChart3 },
+            { id: 'gantt' as const, label: 'Gantt', icon: BarChart3 },
             { id: 'team' as const, label: 'Equipo', icon: Users },
-            { id: 'models' as const, label: 'Modelos BIM', icon: Box },
+            { id: 'models' as const, label: 'Modelos', icon: Box },
             { id: 'analytics' as const, label: 'Analíticas', icon: FileText },
           ].map((tab) => {
             const TabIcon = tab.icon;
             return (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id ? 'text-blue-600 border-blue-600' : 'text-gray-500 border-transparent hover:text-gray-700'}`}>
-                <TabIcon className="h-4 w-4" />
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-1.5 md:gap-2 pb-3 px-1 text-xs md:text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === tab.id ? 'text-blue-600 border-blue-600' : 'text-gray-500 border-transparent hover:text-gray-700'}`}>
+                <TabIcon className="h-3.5 w-3.5 md:h-4 md:w-4" />
                 {tab.label}
               </button>
             );
@@ -377,9 +375,9 @@ export default function ProjectDetail() {
 
       {activeTab === 'tasks' && (
         <>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Tareas del Proyecto</h3>
-            <button onClick={() => setShowTaskForm(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900">Tareas del Proyecto</h3>
+            <button onClick={() => setShowTaskForm(true)} className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors w-full sm:w-auto">
               <Plus className="h-4 w-4" /> Agregar Tarea
             </button>
           </div>
@@ -537,33 +535,32 @@ export default function ProjectDetail() {
 
       {activeTab === 'team' && (
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Equipo del Proyecto</h3>
-            <button onClick={() => setShowMemberForm(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900">Equipo del Proyecto</h3>
+            <button onClick={() => setShowMemberForm(true)} className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors w-full sm:w-auto">
               <UserPlus className="h-4 w-4" /> Invitar
             </button>
           </div>
           {showMemberForm && (
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 mb-6">
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 md:p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-medium text-gray-900">Invitar Miembro</h4>
                 <button onClick={() => setShowMemberForm(false)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email del usuario</label>
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                   <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="email@ejemplo.com" />
                 </div>
-                <div>
+                <div className="w-full sm:w-32">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
                   <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                     <option value="editor">Editor</option>
                     <option value="viewer">Lector</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">&nbsp;</label>
-                  <button onClick={addMember} disabled={!inviteEmail} className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">Enviar Invitación</button>
+                <div className="flex items-end">
+                  <button onClick={addMember} disabled={!inviteEmail} className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors whitespace-nowrap">Enviar</button>
                 </div>
               </div>
             </div>
@@ -573,18 +570,18 @@ export default function ProjectDetail() {
               <div className="text-center py-12 text-gray-400"><Users className="h-12 w-12 mx-auto mb-3 text-gray-300" /><p>Invita miembros al proyecto para colaborar</p></div>
             ) : (
               members.map((member) => (
-                <div key={member.id} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                      <span className="font-semibold text-blue-700">{member.full_name.charAt(0).toUpperCase()}</span>
+                <div key={member.id} className="bg-white border border-gray-200 rounded-xl p-3 md:p-4 flex items-center justify-between hover:shadow-md transition-shadow gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm md:text-base font-semibold text-blue-700">{member.full_name.charAt(0).toUpperCase()}</span>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{member.full_name}</p>
-                      <p className="text-sm text-gray-500">{member.email}</p>
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-900 text-sm md:text-base truncate">{member.full_name}</p>
+                      <p className="text-xs md:text-sm text-gray-500 truncate">{member.email}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${member.member_role === 'editor' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${member.member_role === 'editor' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
                       {member.member_role === 'editor' ? 'Editor' : 'Lector'}
                     </span>
                     <button onClick={() => removeMember(member.id)} className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 className="h-4 w-4" /></button>
@@ -598,9 +595,9 @@ export default function ProjectDetail() {
 
       {activeTab === 'models' && (
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Modelos BIM</h3>
-            <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 cursor-pointer transition-colors">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900">Modelos BIM</h3>
+            <label className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 cursor-pointer transition-colors w-full sm:w-auto">
               <Upload className="h-4 w-4" />
               {uploading ? 'Subiendo...' : 'Subir Modelo'}
               <input type="file" className="hidden" accept=".ifc,.rvt,.rfa,.dwg,.dxf,.obj,.fbx" onChange={handleFileUpload} disabled={uploading} />
@@ -615,18 +612,18 @@ export default function ProjectDetail() {
               </div>
             ) : (
               models.map((model) => (
-                <div key={model.id} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
-                      <Box className="h-5 w-5 text-orange-600" />
+                <div key={model.id} className="bg-white border border-gray-200 rounded-xl p-3 md:p-4 flex items-center justify-between hover:shadow-md transition-shadow gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                      <Box className="h-4 w-4 md:h-5 md:w-5 text-orange-600" />
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{model.name}</p>
-                      <p className="text-sm text-gray-500">{formatBytes(model.file_size)} — {model.file_type}</p>
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-900 text-sm md:text-base truncate">{model.name}</p>
+                      <p className="text-xs md:text-sm text-gray-500">{formatBytes(model.file_size)} — {model.file_type}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400">{new Date(model.created_at).toLocaleDateString()}</span>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-xs text-gray-400 hidden sm:inline">{new Date(model.created_at).toLocaleDateString()}</span>
                     <button onClick={() => deleteModel(model.id)} className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 className="h-4 w-4" /></button>
                   </div>
                 </div>
@@ -642,7 +639,7 @@ export default function ProjectDetail() {
             <div className="text-center py-12 text-gray-400"><p>Cargando analíticas...</p></div>
           ) : (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 <div className="bg-white border border-gray-200 rounded-xl p-5">
                   <span className="text-sm font-medium text-gray-500">Total Tareas</span>
                   <p className="text-3xl font-bold text-gray-900 mt-1">{analytics.tasks.total}</p>
@@ -660,7 +657,7 @@ export default function ProjectDetail() {
                   <p className="text-3xl font-bold text-purple-600 mt-1">{analytics.members?.total_members || 0}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div className="bg-white border border-gray-200 rounded-xl p-5">
                   <h4 className="font-semibold text-gray-900 mb-4">Tareas por Dimensión</h4>
                   {analytics.byDimension.length === 0 ? (
@@ -738,8 +735,8 @@ export default function ProjectDetail() {
       )}
 
       <div className="mt-8 text-center">
-        <button onClick={() => navigate('/ai')} className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg">
-          <MessageSquare className="h-5 w-5" />
+        <button onClick={() => navigate('/ai')} className="w-full sm:inline-flex sm:w-auto items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg">
+          <MessageSquare className="h-5 w-5 hidden sm:inline-block" />
           Consultar al Asistente IA
         </button>
       </div>

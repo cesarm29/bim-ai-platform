@@ -119,14 +119,14 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Panel BIM</h1>
-          <p className="text-gray-500 mt-1">Dashboard analítico de proyectos</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Panel BIM</h1>
+          <p className="text-gray-500 mt-1 text-sm md:text-base">Dashboard analítico de proyectos</p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          className="flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors w-full sm:w-auto"
         >
           <Plus className="h-5 w-5" />
           Nuevo Proyecto
@@ -135,7 +135,7 @@ export default function Dashboard() {
 
       {a && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium text-gray-500">Proyectos</span>
@@ -184,7 +184,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 mb-6">
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <h3 className="font-semibold text-gray-900 mb-4">Tareas por Dimensión BIM</h3>
               {a.byDimension.length === 0 ? (
@@ -263,9 +263,9 @@ export default function Dashboard() {
       )}
 
       {showCreate && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowCreate(false)}>
-          <div className="bg-white rounded-2xl p-8 w-full max-w-lg m-4" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Nuevo Proyecto</h2>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowCreate(false)}>
+          <div className="bg-white rounded-2xl p-6 md:p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-6">Nuevo Proyecto</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
@@ -312,7 +312,7 @@ export default function Dashboard() {
       )}
 
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-900">Mis Proyectos</h2>
+        <h2 className="text-lg md:text-xl font-bold text-gray-900">Mis Proyectos</h2>
         <span className="text-sm text-gray-500">{projects.length} proyectos</span>
       </div>
 
